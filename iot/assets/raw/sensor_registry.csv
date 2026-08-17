@@ -1,0 +1,13 @@
+sensor_id,fulfillment_center,zone,model,install_date
+S01,FC-EAST,ambient,HarborTherm-2,2025-11-03
+S02,FC-EAST,ambient,HarborTherm-2,2025-11-03
+S03,FC-EAST,cold-storage,HarborTherm-2C,2025-11-04
+S04,FC-EAST,cold-storage,HarborTherm-2C,2025-11-04
+S05,FC-WEST,ambient,HarborTherm-2,2025-12-10
+S06,FC-WEST,ambient,HarborTherm-2,2025-12-10
+S07,FC-WEST,cold-storage,HarborTherm-2C,2025-12-11
+S08,FC-WEST,cold-storage,HarborTherm-2C,2025-12-11
+S09,FC-CENTRAL,ambient,HarborTherm-3,2026-02-01
+S10,FC-CENTRAL,ambient,HarborTherm-3,2026-02-01
+S11,FC-CENTRAL,dock,HarborTherm-3,2026-02-02
+S12,FC-CENTRAL,dock,HarborTherm-3,2026-02-02

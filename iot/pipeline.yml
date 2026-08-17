@@ -1,0 +1,27 @@
+name: iot
+schedule: daily
+start_date: "2026-03-01"
+catchup: false
+retries: 2
+
+tags:
+  - harborside
+  - iot
+  - operations
+domains:
+  - operations
+meta:
+  team: ops
+  cost_center: OPS-101
+  description: Environmental monitoring of fulfillment-center storage.
+
+metadata_push:
+  bigquery: true
+
+notifications:
+  slack:
+    - channel: "#data-alerts"
+      failure: true
+
+default_connections:
+  google_cloud_platform: gcp-default

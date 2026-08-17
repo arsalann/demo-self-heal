@@ -1,0 +1,73 @@
+---
+name: maintenance-action
+description: Use after a diagnosis skill has identified a likely fix and the repository owner wants to define a controlled action.
+connections:
+  - bruin
+  - github
+---
+
+# Maintenance Action
+
+## When to Use
+
+Use this skill after a diagnosis skill has identified a likely fix and the repository owner wants to define a controlled action.
+
+## Inputs
+
+- Diagnosis summary.
+- Exact action requested by the repository owner.
+- Files, assets, connections, or systems in scope.
+- Required approval process.
+
+## Operating Context
+
+- These starter skills can be used by Bruin Cloud agents, local agents, and external assistants connected to Bruin Cloud.
+- In Bruin Cloud, use Cloud CLI access when the agent has it enabled. Use the `bruin cloud` CLI when the assistant has shell access and a configured API key or `.bruin.yml`; use Bruin Cloud MCP only when the assistant is configured for MCP tool calls or does not have direct CLI access. If using the CLI, supported operational commands include `bruin cloud runs trigger --project-id <project-id> --pipeline <pipeline-name>`, `bruin cloud runs rerun --project-id <project-id> --run-id <run-id> --only-failed`, `bruin cloud pipelines enable --project-id <project-id> --pipeline <pipeline-name>`, and `bruin cloud pipelines disable --project-id <project-id> --pipeline <pipeline-name>`.
+- In local development, create runs with direct terminal commands such as `bruin run <path>`, `bruin run <asset>`, `bruin validate <path>`, and `bruin query`. Read troubleshooting context from terminal output and the local `logs/` folder, especially `logs/runs`, query logs, and export logs when they exist.
+- If action verification requires running an asset or pipeline, prefer a dev or shadow environment. If none exists, ask whether to run in production or create temporary copies of the affected tables to reproduce and test the issue.
+- For other agent runtimes or orchestrators, customize this skill with the correct log source and action mechanism before using it to trigger runs, enable or disable schedules, mark statuses, or change external systems.
+
+## Context to Gather
+
+- Confirm the action is explicitly requested and scoped.
+- Inspect affected files and downstream dependencies.
+- Identify whether the action touches data, source systems, credentials, or production environments.
+- Determine the smallest validation command that proves the action worked.
+- Use Bruin MCP docs tools or `bruin <command> --help` to confirm the current command syntax before running Cloud or local CLI commands.
+
+## Decision Tree
+
+- If the action touches production data or credentials, stop unless explicit approval is present.
+- If the action changes repo files, make a minimal diff and run validation.
+- If the action fixes data logic, first verify the known bad row, key, partition, or timestamp, then run the broader validation only after the specific example is resolved.
+- If the action requires a pull request, prepare a clear summary and verification notes.
+- If the action is not yet defined, return the diagnosis and ask for the missing policy.
+
+## Actions
+
+Follow the self-healing policy in the repo-root `AGENTS.md`. In this repo:
+
+- **Scope:** the `iot`, `shop`, `webevents`, and `stripe` pipelines only.
+- **Writes:** the `agent-dev` environment only — never production.
+- **Do without asking:** read logs, lineage, and asset definitions; query `agent-dev` and read-only connections; then branch, make the fix, `bruin validate`, `bruin unit-test`, and open a PR.
+- **Ask first:** triggering a run, rerun, or backfill; merging a PR; or changing a schedule, schema, check expectation, or metric definition.
+- **Never:** use `--full-refresh`, or delete data, assets, pipelines, or connections.
+- The Python `raw/*.py` generators emulate the source and seed the designed incidents. Fix the stage/report SQL, a check, or metadata — not the generator.
+
+Every diagnosis includes the run ID, affected interval, failed asset, failing rows or log lines, lineage, and the tested result. Escalate to `data-platform@harborside.example` on the stop conditions in `AGENTS.md`.
+
+## Verification
+
+- Run the smallest relevant Bruin validation command.
+- For Cloud actions, verify the resulting state with `bruin cloud runs get`, `bruin cloud runs list`, or `bruin cloud pipelines get`.
+- For local actions, verify with the local command output, `bruin validate <path>`, and local `logs/` files when present.
+- Record any command that could not be run.
+
+## Output
+
+Return:
+
+- Action taken or reason no action was taken.
+- Files or systems touched.
+- Validation results.
+- Remaining manual approval or follow-up.

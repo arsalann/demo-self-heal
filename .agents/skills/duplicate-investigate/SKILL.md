@@ -1,0 +1,79 @@
+---
+name: duplicate-investigate
+description: Use when duplicate rows, unstable primary keys, repeated ingestion, or failed uniqueness checks appear in a Bruin asset.
+connections:
+  - bruin
+  - github
+---
+
+# Duplicate Investigate
+
+## When to Use
+
+Use this skill when duplicate rows, unstable primary keys, repeated ingestion, or failed uniqueness checks appear in a Bruin asset.
+
+## Inputs
+
+- Affected asset name or table.
+- Key columns or uniqueness checks.
+- Error output, sample duplicate keys, or row counts.
+
+## Operating Context
+
+- These starter skills can be used by Bruin Cloud agents, local agents, and external assistants connected to Bruin Cloud.
+- In Bruin Cloud, use Cloud CLI access when the agent has it enabled. Use the `bruin cloud` CLI when the assistant has shell access and a configured API key or `.bruin.yml`; use Bruin Cloud MCP only when the assistant is configured for MCP tool calls or does not have direct CLI access. If using the CLI, inspect failures with `bruin cloud runs diagnose --project-id <project-id> --pipeline <pipeline-name> --latest`, fetch failed logs with `bruin cloud instances failed-logs --project-id <project-id> --run-id <run-id>`, and inspect a specific asset with `bruin cloud assets get --project-id <project-id> --pipeline <pipeline-name> --asset <asset-name>`.
+- In local development, inspect terminal output and the local `logs/` folder, especially `logs/runs`, query logs, and export logs when they exist. Use `bruin query` with existing `.bruin.yml` connections for read-only duplicate checks.
+- If investigation or fix verification requires running an asset or pipeline, prefer a dev or shadow environment. If none exists, ask whether to run in production or create temporary copies of the affected tables to reproduce and test the issue.
+- For other agent runtimes or orchestrators, customize this skill with the correct log source, query mechanism, and action mechanism before using it.
+
+## Context to Gather
+
+- Inspect quality checks and declared primary or unique keys.
+- Find the ingestion or transformation logic that creates the affected rows.
+- Compare source row counts, destination row counts, and recent run history when available.
+- Check whether incremental logic can replay the same source records.
+- Use Bruin MCP docs tools or `bruin <command> --help` to confirm the current command syntax before running Cloud or local CLI commands.
+
+## Lineage Investigation
+
+- Find one specific duplicate key or bad row pattern first, then keep every upstream query filtered to that instance. For example, prove `COUNT(*) > 1` for one `user_id` and `transaction_date` before broad scans.
+- If the data has bronze, silver, gold, or other tiers, start at the asset where the duplicate appears and trace upstream through lineage one asset at a time.
+- Query the filtered duplicate instance in each upstream asset until you find the first asset where the duplicate appears.
+- Once the first bad asset is identified, read its SQL query or Python script and isolate the specific join, union, incremental filter, merge key, deduplication step, or function that likely introduced the duplicate.
+- If the user has allowed fixes, change only that specific logic, then run the smallest asset-level validation in dev or shadow first. Recheck the same duplicate instance after the fix; only after that passes, run the full duplicate check or affected quality check.
+
+## Decision Tree
+
+- If duplicates share the same business key and timestamp, suspect replay or missing deduplication.
+- If duplicates differ only by load metadata, inspect incremental merge logic.
+- If the declared key is incomplete, identify additional columns needed for uniqueness.
+- If duplicates originate upstream, report the source and avoid masking the issue silently.
+
+## Actions
+
+Follow the self-healing policy in the repo-root `AGENTS.md`. In this repo:
+
+- **Scope:** the `iot`, `shop`, `webevents`, and `stripe` pipelines only.
+- **Writes:** the `agent-dev` environment only — never production.
+- **Do without asking:** read logs, lineage, and asset definitions; query `agent-dev` and read-only connections; then branch, make the fix, `bruin validate`, `bruin unit-test`, and open a PR.
+- **Ask first:** triggering a run, rerun, or backfill; merging a PR; or changing a schedule, schema, check expectation, or metric definition.
+- **Never:** use `--full-refresh`, or delete data, assets, pipelines, or connections.
+- The Python `raw/*.py` generators emulate the source and seed the designed incidents. Fix the stage/report SQL, a check, or metadata — not the generator.
+
+Every diagnosis includes the run ID, affected interval, failed asset, failing rows or log lines, lineage, and the tested result. Escalate to `data-platform@harborside.example` on the stop conditions in `AGENTS.md`.
+
+## Verification
+
+- Re-run the duplicate detection query.
+- Re-run the affected quality check if available.
+- Confirm whether the duplicate count changed after any reviewed fix.
+
+## Output
+
+Return:
+
+- Duplicate pattern.
+- Suspected source.
+- Keys or columns involved.
+- Recommended remediation.
+- Commands or queries run.

@@ -1,0 +1,33 @@
+name: stripe
+schedule: daily
+start_date: "2023-01-01"
+catchup: false
+retries: 2
+
+tags:
+  - harborside
+  - finance
+domains:
+  - finance
+meta:
+  team: finance
+  cost_center: "FIN-204"
+
+metadata_push:
+  bigquery: true
+
+notifications:
+  slack:
+    - channel: "#data-alerts"
+      failure: true
+
+default:
+  type: ingestr
+  parameters:
+    source_connection: stripe-default
+    destination: bigquery
+    loader_file_format: jsonl
+
+default_connections:
+  google_cloud_platform: gcp-default
+  stripe: stripe-default

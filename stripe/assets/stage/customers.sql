@@ -1,0 +1,90 @@
+/* @bruin
+name: stripe_stage.customers
+type: bq.sql
+uri: bigquery://harborside-analytics.stripe_stage.customers
+description: >
+  Conformed Stripe billing accounts. This model keeps customer identifiers and
+  metadata available for downstream billing analytics; direct contact details
+  remain in the raw source and are intentionally excluded from reports.
+
+materialization:
+  type: table
+
+depends:
+  - stripe_raw.customer
+
+owner: dana@harborside.example
+tags:
+  - harborside
+  - stripe_stage
+  - stripe
+  - billing
+  - stage
+  - customers
+
+domains:
+  - finance
+meta:
+  layer: stage
+  tier: silver
+  team: finance
+  cost_center: "FIN-204"
+
+columns:
+  - name: stripe_customer_id
+    type: STRING
+    description: Stripe billing customer identifier and natural key.
+    primary_key: true
+    checks:
+      - name: not_null
+      - name: unique
+  - name: customer_created_at
+    type: TIMESTAMP
+    description: When the customer was created in Stripe.
+  - name: customer_name
+    type: STRING
+    description: Customer's full name or business name.
+  - name: customer_email
+    type: STRING
+    description: >
+      Customer's email address. It is kept here for operational lookups and is
+      not carried into the reporting layer.
+  - name: is_live_mode
+    type: BOOL
+    description: Whether the customer exists in Stripe live mode.
+  - name: customer_metadata
+    type: JSON
+    description: Full key-value metadata set on the Stripe customer.
+  - name: crm_account_id
+    type: STRING
+    description: >
+      CRM account identifier read from the `crm_account_id` metadata key. It is
+      null unless your Stripe customers carry that key.
+  - name: customer_segment
+    type: STRING
+    description: Customer segment read from the `segment` metadata key.
+  - name: customer_region
+    type: STRING
+    description: Customer region read from the `region` metadata key.
+  - name: sales_owner
+    type: STRING
+    description: Sales owner read from the `sales_owner` metadata key.
+  - name: acquisition_channel
+    type: STRING
+    description: >
+      Acquisition channel read from the `acquisition_channel` metadata key.
+@bruin */
+
+SELECT
+  id AS stripe_customer_id,
+  TIMESTAMP_SECONDS(SAFE_CAST(created AS INT64)) AS customer_created_at,
+  name AS customer_name,
+  email AS customer_email,
+  livemode AS is_live_mode,
+  metadata AS customer_metadata,
+  LAX_STRING(metadata.crm_account_id) AS crm_account_id,
+  LAX_STRING(metadata.segment) AS customer_segment,
+  LAX_STRING(metadata.region) AS customer_region,
+  LAX_STRING(metadata.sales_owner) AS sales_owner,
+  LAX_STRING(metadata.acquisition_channel) AS acquisition_channel
+FROM stripe_raw.customer;

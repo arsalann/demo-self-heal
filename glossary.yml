@@ -1,0 +1,129 @@
+# Harborside semantic layer.
+# Shared business entities and attributes that asset columns can `extends:` so a
+# term means the same thing in every pipeline. See any asset that references, for
+# example, `extends: Sensor.SensorId`.
+
+domains:
+  commerce:
+    description: Storefront orders, products, and one-time revenue.
+    owners:
+      - Dana (Finance)
+    tags:
+      - commerce
+    contact:
+      - type: email
+        address: dana@harborside.example
+  finance:
+    description: Recurring revenue, billing, MRR, and invoicing.
+    owners:
+      - Dana (Finance)
+      - Priya (Growth)
+    tags:
+      - finance
+    contact:
+      - type: email
+        address: dana@harborside.example
+  marketing:
+    description: Web traffic, acquisition, and conversion.
+    owners:
+      - Priya (Growth)
+    tags:
+      - marketing
+    contact:
+      - type: email
+        address: priya@harborside.example
+  operations:
+    description: Fulfillment centers and environmental monitoring.
+    owners:
+      - Sam (Ops)
+    tags:
+      - operations
+    contact:
+      - type: email
+        address: sam@harborside.example
+
+entities:
+  Customer:
+    description: A person or business with a Harborside account.
+    domains:
+      - commerce
+      - finance
+    attributes:
+      CustomerId:
+        type: string
+        description: Stable identifier for one customer.
+      Currency:
+        type: string
+        description: Three-letter ISO currency the customer is billed in.
+
+  Order:
+    description: A one-time storefront purchase.
+    domains:
+      - commerce
+    attributes:
+      OrderId:
+        type: string
+        description: Stable identifier for one order.
+      OrderDate:
+        type: date
+        description: UTC calendar date the order was placed.
+      Country:
+        type: string
+        description: ISO 3166-1 alpha-2 country code of the order.
+      AmountUsd:
+        type: float
+        description: Order gross amount in USD.
+
+  Product:
+    description: A sellable SKU in the Harborside catalog.
+    domains:
+      - commerce
+    attributes:
+      ProductId:
+        type: string
+        description: Stable identifier for one product.
+      Category:
+        type: string
+        description: Merchandising category the product belongs to.
+      PriceUsd:
+        type: float
+        description: List price in USD.
+
+  Subscription:
+    description: A Home Box recurring subscription.
+    domains:
+      - finance
+    attributes:
+      SubscriptionId:
+        type: string
+        description: Stripe subscription identifier.
+      SubscriptionStatus:
+        type: string
+        description: Current Stripe subscription status, such as active or past_due.
+
+  Sensor:
+    description: An environmental sensor in a fulfillment center.
+    domains:
+      - operations
+    attributes:
+      SensorId:
+        type: string
+        description: Sensor hardware identifier, for example S07.
+      FulfillmentCenter:
+        type: string
+        description: Fulfillment center the sensor is installed in.
+      Zone:
+        type: string
+        description: Storage zone the sensor monitors.
+
+  WebSession:
+    description: A visitor session on the storefront website.
+    domains:
+      - marketing
+    attributes:
+      SessionId:
+        type: string
+        description: Session identifier.
+      Browser:
+        type: string
+        description: Browser name reported by the pageview event.

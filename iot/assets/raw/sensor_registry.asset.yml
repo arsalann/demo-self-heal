@@ -1,0 +1,65 @@
+name: iot_raw.sensor_registry
+type: bq.seed
+description: >
+  Reference catalog of the environmental sensors deployed across Harborside's
+  fulfillment centers. One row per sensor: which center and zone it monitors,
+  its hardware model, and when it was installed. Loaded from a checked-in CSV
+  seed and changed only when hardware is added or moved, so downstream assets
+  depend on it symbolically (it must not gate a run).
+
+parameters:
+  path: sensor_registry.csv
+
+owner: sam@harborside.example
+tags:
+  - harborside
+  - iot
+  - raw
+  - reference
+domains:
+  - operations
+meta:
+  layer: raw
+  tier: bronze
+  team: ops
+  cost_center: OPS-101
+  source: hardware asset register (CSV seed)
+  change_frequency: rarely
+
+columns:
+  # `extends` pulls the shared definition from glossary.yml; the local type,
+  # description, and checks below take priority over the glossary defaults.
+  - name: sensor_id
+    extends: Sensor.SensorId
+    type: VARCHAR
+    description: Sensor hardware identifier, for example `S07`. Joins to `iot_raw.sensor_readings`.
+    primary_key: true
+    nullable: false
+    checks:
+      - name: not_null
+      - name: unique
+  - name: fulfillment_center
+    extends: Sensor.FulfillmentCenter
+    type: VARCHAR
+    description: Fulfillment center the sensor is installed in.
+    nullable: false
+    checks:
+      - name: not_null
+      - name: accepted_values
+        value: [FC-EAST, FC-WEST, FC-CENTRAL]
+  - name: zone
+    extends: Sensor.Zone
+    type: VARCHAR
+    description: Storage zone the sensor monitors.
+    nullable: false
+    checks:
+      - name: accepted_values
+        value: [ambient, cold-storage, dock]
+  - name: model
+    type: VARCHAR
+    description: Sensor hardware model.
+    nullable: false
+  - name: install_date
+    type: DATE
+    description: Date the sensor was installed.
+    nullable: false

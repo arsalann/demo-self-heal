@@ -1,0 +1,73 @@
+schema: v1
+name: storefront_orders
+label: Storefront orders
+description: >
+  Order-grain storefront data for one-time commerce revenue. The source is the
+  conformed report table, so each row represents one deduplicated storefront
+  order and amount_usd is already expressed in USD.
+
+source:
+  table: shop_report.orders_enriched
+
+primary_key: order_id
+
+dimensions:
+  - name: order_date
+    label: Order date
+    description: UTC calendar date on which the order was placed.
+    type: time
+    expression: order_date
+    granularities:
+      day: order_date
+      month: DATE_TRUNC(order_date, MONTH)
+  - name: country
+    label: Country
+    description: ISO 3166-1 alpha-2 country code of the order.
+    type: string
+  - name: category
+    label: Product category
+    description: Normalized product category associated with the order.
+    type: string
+  - name: acquisition_channel
+    label: Acquisition channel
+    description: Marketing acquisition channel associated with the billing customer, when available.
+    type: string
+  - name: is_billing_customer
+    label: Is billing customer
+    description: Whether the storefront buyer has a matching Stripe billing customer.
+    type: boolean
+
+metrics:
+  - name: gross_revenue_usd
+    label: Gross revenue
+    description: Sum of storefront order amounts in USD before refunds and discounts.
+    expression: sum(amount_usd)
+    format:
+      type: currency
+      currency: USD
+      decimals: 2
+  - name: order_count
+    label: Orders
+    description: Number of distinct storefront orders.
+    expression: count(distinct order_id)
+    format:
+      type: number
+  - name: distinct_customer_count
+    label: Customers
+    description: Number of distinct customers placing storefront orders.
+    expression: count(distinct user_id)
+    format:
+      type: number
+  - name: average_order_value_usd
+    label: Average order value
+    description: Gross storefront revenue divided by distinct order count.
+    expression: "{gross_revenue_usd} / {order_count}"
+    format:
+      type: currency
+      currency: USD
+      decimals: 2
+
+segments:
+  - name: billing_customers
+    description: Orders placed by customers with a matching Stripe billing account.
+    filter: "is_billing_customer = true"

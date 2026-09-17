@@ -1,0 +1,64 @@
+# semantic
+schema: v1
+name: subscription_mrr
+label: Subscription MRR
+description: >
+  Monthly Home Box recurring-revenue metrics from the Stripe report layer.
+  Amounts remain in each currency's native minor units; queries must keep
+  currency as a grouping dimension and must not add values across currencies.
+
+source:
+  table: stripe_report.monthly_subscription_kpis
+
+dimensions:
+  - name: metric_month
+    label: Metric month
+    description: First day of the month represented by the subscription snapshot.
+    type: time
+    expression: metric_month
+    granularities:
+      month: metric_month
+      quarter: DATE_TRUNC(metric_month, QUARTER)
+  - name: currency
+    label: Currency
+    description: Native Stripe currency for the reported amounts.
+    type: string
+
+metrics:
+  - name: ending_mrr_minor
+    label: Ending MRR
+    description: Month-end gross list-price MRR in native-currency minor units.
+    expression: sum(ending_mrr_minor)
+    format:
+      type: number
+  - name: ending_arr_minor
+    label: Ending ARR
+    description: Ending MRR multiplied by twelve, in native-currency minor units; this is a run rate, not recognized revenue.
+    expression: sum(ending_run_rate_arr_minor)
+    format:
+      type: number
+  - name: ending_active_customer_count
+    label: Active customers
+    description: Number of customers with positive month-end MRR.
+    expression: sum(ending_active_customer_count)
+    format:
+      type: number
+  - name: gross_revenue_retention_rate
+    label: Gross revenue retention
+    description: Beginning MRR less contraction and churn, divided by beginning MRR; null when the month is not reconcilable.
+    expression: max(gross_revenue_retention_rate)
+    format:
+      type: percentage
+      decimals: 2
+  - name: net_revenue_retention_rate
+    label: Net revenue retention
+    description: Beginning MRR plus expansion less contraction and churn, divided by beginning MRR; reactivation is excluded by policy.
+    expression: max(net_revenue_retention_rate_excluding_reactivation)
+    format:
+      type: percentage
+      decimals: 2
+
+segments:
+  - name: reconcilable_months
+    description: Months with a positive beginning MRR baseline for retention analysis.
+    filter: "beginning_mrr_minor > 0"

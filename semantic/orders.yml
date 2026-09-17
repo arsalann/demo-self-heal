@@ -1,0 +1,26 @@
+schema: v1
+name: orders
+label: Orders
+description: One-time storefront order metrics.
+
+source:
+  table: shop_report.orders_enriched
+
+dimensions:
+  - name: order_date
+    type: time
+    granularities:
+      month: DATE_TRUNC(order_date, MONTH)
+  - name: country
+    type: string
+
+metrics:
+  - name: revenue_usd
+    expression: sum(amount_usd)
+    format:
+      type: currency
+      currency: USD
+  - name: order_count
+    expression: count(distinct order_id)
+  - name: average_order_value_usd
+    expression: "{revenue_usd} / {order_count}"
